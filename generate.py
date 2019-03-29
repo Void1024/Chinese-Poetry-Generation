@@ -36,7 +36,7 @@ class Generator(Singleton):
                 shape = [_BATCH_SIZE],
                 dtype = tf.int32,
                 name = "keyword_length")
-        _, bi_states = tf.nn.bidirectional_dynamic_rnn(
+        bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
                 cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
                 inputs = self.keyword,
@@ -45,6 +45,9 @@ class Generator(Singleton):
                 time_major = False,
                 scope = "keyword_encoder")
         self.keyword_state = tf.concat(bi_states, axis = 1)
+
+        self.encoder_outputs = tf.concat(bi_outputs, axis = 2)
+
         tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
                 assert_same_rank(self.keyword_state.shape)
 
@@ -58,7 +61,7 @@ class Generator(Singleton):
                 shape = [_BATCH_SIZE],
                 dtype = tf.int32,
                 name = "context_length")
-        bi_outputs, _ = tf.nn.bidirectional_dynamic_rnn(
+        bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
                 cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
                 inputs = self.context,
@@ -67,6 +70,9 @@ class Generator(Singleton):
                 time_major = False,
                 scope = "context_encoder")
         self.context_outputs = tf.concat(bi_outputs, axis = 2)
+
+        self.encoder_outputs = tf.concat((self.encoder_outputs, self.context_outputs), axis = 1)
+
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.context_outputs.shape)
 
@@ -74,8 +80,8 @@ class Generator(Singleton):
         """ Decode keyword and context into a sequence of vectors. """
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
-                memory = self.context_outputs,
-                memory_sequence_length = self.context_length)
+                memory = self.encoder_outputs,
+                memory_sequence_length = (self.context_length + self.keyword_length))
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 cell = tf.contrib.rnn.GRUCell(_NUM_UNITS),
                 attention_mechanism = attention)
@@ -153,7 +159,7 @@ class Generator(Singleton):
 
         self.learning_rate = tf.clip_by_value(
                 tf.multiply(1.6e-5, tf.pow(2.1, self.loss)),
-                clip_value_min = 0.0002,
+                clip_value_min = 0.00002,
                 clip_value_max = 0.02)
         self.opt_step = tf.train.AdamOptimizer(
                 learning_rate = self.learning_rate).\
@@ -178,12 +184,10 @@ class Generator(Singleton):
     def _initialize_session(self, session):
         checkpoint = tf.train.get_checkpoint_state(save_dir)
         if not checkpoint or not checkpoint.model_checkpoint_path:
-            print("[Log] Checkpoint not found !")
             init_op = tf.group(tf.global_variables_initializer(),
                     tf.local_variables_initializer())
             session.run(init_op)
         else:
-            print("[Log] Checkpoint load success !")
             self.saver.restore(session, checkpoint.model_checkpoint_path)
             self.trained = True
         pass
@@ -222,12 +226,48 @@ class Generator(Singleton):
                             [self.probs, self.decoder_final_state], 
                             feed_dict = encoder_feed_dict)
                     prob_list = self._gen_prob_list(probs, context, pron_dict)
-                    prob_sums = np.cumsum(prob_list)
-                    rand_val = prob_sums[-1] * random()
-                    for i, prob_sum in enumerate(prob_sums):
-                        if rand_val < prob_sum:
+
+                #     Algorithm 1:
+                #     prob_sums = np.cumsum(prob_list)
+                #     rand_val = prob_sums[-1] * random()
+                #     for i, prob_sum in enumerate(prob_sums):
+                #         if rand_val < prob_sum:
+                #             char = self.char_dict.int2char(i)
+                #             break
+
+                #     Algorithm 2:
+                    max_prob = prob_list[0]
+                    candidates = []
+                    char = self.char_dict.int2char(0)
+                    for i in range(1, len(prob_list)):
+                        if prob_list[i] >= max_prob:
+                            max_prob = prob_list[i]
                             char = self.char_dict.int2char(i)
-                            break
+                    max_prob = max_prob * (random() * 0.5 + 0.5)
+                    for i in range(len(prob_list)):
+                        if prob_list[i] >= max_prob:
+                            candidates.append(i)
+                    char_index = candidates[int(random() * len(candidates))]
+                    char = self.char_dict.int2char(char_index)
+
+                #     Algorithm 3:
+                #     prob_rank = sorted(enumerate(prob_list), key = lambda x : x[1])[-3 : -1]
+                #     prob_rank = [i for i, v in prob_rank]
+                #     char = self.char_dict.int2char(prob_rank[int(random() * 2)])
+
+                #     Algorithm 2:
+                #     max_prob = prob_list[0]
+                #     char = self.char_dict.int2char(0)
+                #     for i in range(1, len(prob_list)):
+                #         if prob_list[i] >= max_prob:
+                #             max_prob = prob_list[i]
+                #             char = self.char_dict.int2char(i)
+                #     max_prob = max_prob * (random() * 0.4 + 0.6)
+                #     for i in range(len(prob_list)):
+                #         if prob_list[i] >= max_prob:
+                #             char = self.char_dict.int2char(i)
+                #             break
+
                     context += char
                 context += end_of_sentence()
         return context[1:].split(end_of_sentence())
@@ -242,26 +282,24 @@ class Generator(Singleton):
             ch = self.char_dict.int2char(i)
             # Penalize used characters.
             if ch in used_chars:
-                prob_list[i] *= 0.6
+                prob_list[i] *= 0.0001
             # Penalize rhyming violations.
             if (idx == 15 or idx == 31) and \
                     not pron_dict.co_rhyme(ch, context[7]):
-                prob_list[i] *= 0.2
+                prob_list[i] *= 0.0001
             # Penalize tonal violations.
             if idx > 2 and 2 == idx % 8 and \
                     not pron_dict.counter_tone(context[2], ch):
-                prob_list[i] *= 0.4
+                prob_list[i] *= 0.0001
             if (4 == idx % 8 or 6 == idx % 8) and \
                     not pron_dict.counter_tone(context[idx - 2], ch):
-                prob_list[i] *= 0.4
+                prob_list[i] *= 0.0001
         return prob_list
 
     def train(self, n_epochs = 6):
         print("Training RNN-based generator ...")
         with tf.Session() as session:
-            print("[Log] Initialize_session begin !")
             self._initialize_session(session)
-            print("[Log] Initialize_session end !")
             try:
                 for epoch in range(n_epochs):
                     batch_no = 0
@@ -279,9 +317,9 @@ class Generator(Singleton):
                                 keywords, contexts, sentences)
                         
                         batch_no += 1
-                        if 0 == batch_no % 32:
+                        # if 0 == batch_no % 32:
                         
-                            self.saver.save(session, _model_path)
+                        #     self.saver.save(session, _model_path)
                         
                         
                     self.saver.save(session, _model_path)
