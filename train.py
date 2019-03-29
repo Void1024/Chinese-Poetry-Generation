@@ -31,8 +31,8 @@ if __name__ == '__main__':
         if args.all or args.generator:
             print("[Log] build generator")
             generator = Generator()
-        print("[Log] train generator")
-        #     generator.train(n_epochs = 50)
-        generator.train(n_epochs = 2)
-        print("All training is done!")
+            print("[Log] train generator")
+            generator.train(n_epochs = 50)
+
+            print("All training is done!")
 
