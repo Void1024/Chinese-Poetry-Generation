@@ -16,6 +16,7 @@ def _gen_char2vec():
     print("Generating char2vec model ...")
     char_dict = CharDict()
     poems = Poems()
+    poems = [' '.join(poetry) for poetry in poems]
     model = models.Word2Vec(poems, size = CHAR_VEC_DIM, min_count = 5)
     embedding = uniform(-1.0, 1.0, [len(char_dict), CHAR_VEC_DIM])
     for i, ch in enumerate(char_dict):
@@ -29,6 +30,7 @@ class Char2Vec(Singleton):
     def __init__(self):
         if not check_uptodate(char2vec_path):
             _gen_char2vec()
+        # _gen_char2vec()
         self.embedding = np.load(char2vec_path)
         self.char_dict = CharDict()
 

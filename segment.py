@@ -30,7 +30,7 @@ def _gen_sxhy_dict():
                 if idx < len(phrase):
                     for word in jieba.lcut(phrase[idx:]):
                         words.add(word)
-    with open(sxhy_path, 'w', encoding='utf-8') as fout:
+    with open(sxhy_path, 'w') as fout:
         fout.write(' '.join(words))
 
 

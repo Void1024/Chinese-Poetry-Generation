@@ -27,7 +27,7 @@ def _gen_poems():
                                 break
                         if not all_char_in_dict:
                             break
-                    if all_char_in_dict:
+                    if all_char_in_dict and len(sentences) > 1:
                         fout.write(' '.join(sentences) + '\n')
             print("Finished parsing %s." % corpus)
 
