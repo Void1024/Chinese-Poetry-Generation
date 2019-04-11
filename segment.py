@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-from paths import raw_dir, sxhy_path, check_uptodate
+from paths import raw_dir, sxhy_path, check_uptodate, data_dir
 from singleton import Singleton
 from utils import is_cn_sentence, split_sentences
 import jieba
@@ -30,7 +30,9 @@ def _gen_sxhy_dict():
                 if idx < len(phrase):
                     for word in jieba.lcut(phrase[idx:]):
                         words.add(word)
-    with open(sxhy_path, 'w') as fout:
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+    with open(sxhy_path, 'w', encoding = 'utf-8') as fout:
         fout.write(' '.join(words))
 
 

@@ -298,14 +298,14 @@ class Generator(Singleton):
             # Penalize rhyming violations.
             if (idx == 15 or idx == 31) and \
                     not pron_dict.co_rhyme(ch, context[7]):
-                prob_list[i] *= 0.8
+                prob_list[i] *= 1
             # Penalize tonal violations.
             if idx > 2 and 2 == idx % 8 and \
                     not pron_dict.counter_tone(context[2], ch):
-                prob_list[i] *= 0.8
+                prob_list[i] *= 1
             if (4 == idx % 8 or 6 == idx % 8) and \
                     not pron_dict.counter_tone(context[idx - 2], ch):
-                prob_list[i] *= 0.8
+                prob_list[i] *= 1
         return prob_list
 
     def train(self, n_epochs = 6):
