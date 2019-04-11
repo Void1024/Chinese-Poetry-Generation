@@ -29,6 +29,7 @@ class EmotionDict(Singleton):
                     emotions[i] += self.model.similarity(ch, emotion_list[i])
         max_prob = sorted(range(len(emotions)), key = lambda k : emotions[k])[-1]
         predict = emotion_list[max_prob]
+        
         return predict
 
 

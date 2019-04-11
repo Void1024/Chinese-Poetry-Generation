@@ -32,7 +32,7 @@ if __name__ == '__main__':
             print("[Log] build generator")
             generator = Generator()
             print("[Log] train generator")
-            generator.train(n_epochs = 30)
+            generator.train(n_epochs = 100)
 
             print("All training is done!")
 
