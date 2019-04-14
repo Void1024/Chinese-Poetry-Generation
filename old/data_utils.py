@@ -19,14 +19,14 @@ def gen_train_data():
     plan_data = []
     gen_data = []
     for poem in poems:
-        if len(poem) < 2 or len(poem) > 20:
+        if len(poem) < 4 or len(poem) > 8:
             continue # Only consider quatrains.
         valid = True
         context = start_of_sentence()
         gen_lines = []
         keywords = []
         for sentence in poem:
-            if len(sentence) < 5:
+            if len(sentence) < 5 or len(sentence) > 7:
                 valid = False
                 break
             words = list(filter(lambda seg: seg in ranked_words, 
