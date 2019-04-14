@@ -17,6 +17,12 @@ wordrank_path = os.path.join(data_dir, 'wordrank.txt')
 plan_data_path = os.path.join(data_dir, 'plan_data.txt')
 gen_data_path = os.path.join(data_dir, 'gen_data.txt')
 
+# Emotion:
+
+emotion_dir = os.path.join(root_dir, 'emotion')
+
+emotion_poems_path = os.path.join(emotion_dir, 'emotion_poems.txt')
+
 
 # TODO: configure dependencies in another file.
 _dependency_dict = {
@@ -25,6 +31,8 @@ _dependency_dict = {
         wordrank_path : [sxhy_path, poems_path],
         gen_data_path : [char_dict_path, poems_path, sxhy_path, char2vec_path],
         plan_data_path : [char_dict_path, poems_path, sxhy_path, char2vec_path],
+
+        emotion_poems_path : [poems_path],
         }
 
 def check_uptodate(path):

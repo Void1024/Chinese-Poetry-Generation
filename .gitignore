@@ -2,4 +2,6 @@
 show.py
 data/
 save*/
+emotion/
 .backup/
+log.txt
