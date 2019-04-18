@@ -11,6 +11,11 @@ _pinyin_path = os.path.join(raw_dir, 'pinyin.txt')
 
 def _get_vowel(pinyin):
     i = len(pinyin) - 1
+    if pinyin.endswith('N'):
+        i -= 1
+    if pinyin.endswith('NG'):
+        i -= 2
+    i = len(pinyin) - 1
     while i >= 0 and \
             pinyin[i] in ['A', 'O', 'E', 'I', 'U', 'V']:
         i -= 1

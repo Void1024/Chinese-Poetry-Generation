@@ -37,19 +37,19 @@ class Generator(Singleton):
                 dtype = tf.int32,
                 name = "keyword_length")
         bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 4),
-                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 4),
+                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
                 inputs = self.keyword,
                 sequence_length = self.keyword_length,
                 dtype = tf.float32, 
                 time_major = False,
                 scope = "keyword_encoder")
         self.keyword_outputs = tf.concat(bi_outputs, axis = 2)
-        self.keyword_states = tf.concat(bi_states, axis = 1)
-        self.keyword_outputs = tf.concat((self.keyword_outputs[:, :1], self.keyword_outputs[:, -1:]), axis = 2)
+        self.keyword_states = tf.concat(bi_states[0, ], axis = 1)
+
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.keyword_outputs.shape)
-        tf.TensorShape([_BATCH_SIZE, _NUM_UNITS / 2]).\
+        tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
                 assert_same_rank(self.keyword_states.shape)
         
 
@@ -81,11 +81,11 @@ class Generator(Singleton):
     def _build_decoder(self):
         """ Decode keyword and context into a sequence of vectors. """
 
-        encoder_outputs = tf.concat((self.keyword_outputs, self.context_outputs), axis = 1)
+        encoder_states = 
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
-                memory = encoder_outputs,
-                memory_sequence_length = (self.context_length + 2))
+                memory = self.context_outputs,
+                memory_sequence_length = self.context_length)
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 cell = tf.contrib.rnn.GRUCell(_NUM_UNITS),
                 attention_mechanism = attention)

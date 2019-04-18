@@ -17,6 +17,8 @@ wordrank_path = os.path.join(data_dir, 'wordrank.txt')
 plan_data_path = os.path.join(data_dir, 'plan_data.txt')
 gen_data_path = os.path.join(data_dir, 'gen_data.txt')
 
+plan_model_path = os.path.join(save_dir, 'plan_model.bin')
+expander_model_path = os.path.join(save_dir, 'expander.h5')
 # Emotion:
 
 emotion_dir = os.path.join(root_dir, 'emotion')

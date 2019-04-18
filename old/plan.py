@@ -3,7 +3,7 @@
 
 from data_utils import gen_train_data
 from gensim import models
-from paths import save_dir, plan_data_path, check_uptodate
+from paths import save_dir, plan_data_path, plan_model_path, check_uptodate
 from random import random, shuffle
 from rank_words import RankedWords
 from singleton import Singleton
@@ -12,11 +12,7 @@ import jieba
 import os
 
 
-_plan_model_path = os.path.join(save_dir, 'plan_model.bin')
-
-
 def train_planner():
-    # TODO: try other keyword-expansion models.
     print("Training Word2Vec-based planner ...")
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
@@ -26,17 +22,17 @@ def train_planner():
     with open(plan_data_path, 'r') as fin:
         for line in fin.readlines():
             word_lists.append(line.strip().split('\t'))
-    model = models.Word2Vec(word_lists, size = 512, min_count = 5)
-    model.save(_plan_model_path)
+    model = models.Word2Vec(word_lists, size = 512)
+    model.save(plan_model_path)
 
 
 class Planner(Singleton):
 
     def __init__(self):
         self.ranked_words = RankedWords()
-        if not os.path.exists(_plan_model_path):
+        if not os.path.exists(plan_model_path):
             train_planner()
-        self.model = models.Word2Vec.load(_plan_model_path)
+        self.model = models.Word2Vec.load(plan_model_path)
 
     def plan(self, text):
         return self._expand(self._extract(text))
@@ -49,7 +45,7 @@ class Planner(Singleton):
                 similars = self.model.wv.most_similar(
                         positive = filtered_keywords)
                 # Sort similar words in decreasing similarity with randomness.
-                similars = sorted(similars, key = lambda x: x[1] * random())
+                similars = sorted(similars, key = lambda x: x[1])
                 for similar in similars:
                     keywords.add(similar[0])
                     if len(keywords) == NUM_OF_SENTENCES:
