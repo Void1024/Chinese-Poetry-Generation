@@ -1,0 +1,71 @@
+.container-style {
+    width: 600px;
+    margin: auto;
+    text-align: center;
+}
+.non-selectable {
+    width: 150px;
+    height: 44px;
+    font-family: 黑体;
+    font-size: 27px;
+    color: #FFFFFF;
+    line-height: 47px;
+    margin: auto;
+    position: relative;
+    top: -25px;
+    left: 205px;
+    cursor: pointer;
+    background-color: #C12A2B
+}
+.emotion-select {
+    width: 60px;
+    height: 40px;
+    font-family: 黑体;
+    font-size: 27px;
+    color: #FFFFFF;
+    line-height: 40px;
+    margin: auto;
+    position: relative;
+    top: -60px;
+    left: 0px;
+    cursor: pointer;
+    background-color: #C12A2B;
+    display: inline;
+}
+.emotion-nonselect {
+    width: 60px;
+    height: 40px;
+    font-family: 黑体;
+    font-size: 27px;
+    color: #C12A2B;
+    line-height: 40px;
+    margin: auto;
+    position: relative;
+    top: -60px;
+    left: 0px;
+    cursor: pointer;
+    background-color: #FFFFFF;
+    display: inline;
+}
+span {
+    margin: auto;
+    position: relative;
+    left: 5px;
+}
+.poetry-container {
+    position: relative;
+    top: -50px;
+    left: 100px;
+    width: 400px;
+    height: 250px;
+    border:solid #C12A2B;
+}
+.poetry {
+    width: 260px;
+    height: 250px;
+    position: relative;
+    left: 65px;
+    top: 0px;
+    font-family: KaiTi;
+    font-size: 22pt
+}
