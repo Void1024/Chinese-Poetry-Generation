@@ -45,12 +45,10 @@ class Generator(Singleton):
                 time_major = False,
                 scope = "keyword_encoder")
         self.keyword_outputs = tf.concat(bi_outputs, axis = 2)
-        self.keyword_states = tf.concat(bi_states[0, ], axis = 1)
+
 
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.keyword_outputs.shape)
-        tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
-                assert_same_rank(self.keyword_states.shape)
         
 
     def _build_context_encoder(self):
@@ -73,6 +71,7 @@ class Generator(Singleton):
                 scope = "context_encoder")
         self.context_outputs = tf.concat(bi_outputs, axis = 2)
         self.context_states = tf.concat(bi_states, axis = 1)
+
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.context_outputs.shape)
         tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
@@ -81,11 +80,12 @@ class Generator(Singleton):
     def _build_decoder(self):
         """ Decode keyword and context into a sequence of vectors. """
 
-        encoder_states = 
+        encoder_outputs = tf.concat((self.keyword_outputs[:, -1:], self.context_outputs), axis = 1)
+
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
-                memory = self.context_outputs,
-                memory_sequence_length = self.context_length)
+                memory = encoder_outputs,
+                memory_sequence_length = (self.context_length + 1))
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 cell = tf.contrib.rnn.GRUCell(_NUM_UNITS),
                 attention_mechanism = attention)
