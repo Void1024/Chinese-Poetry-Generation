@@ -23,8 +23,8 @@ expander_model_path = os.path.join(save_dir, 'expander.h5')
 
 emotion_dir = os.path.join(root_dir, 'emotion')
 
-emotion_poems_path = os.path.join(emotion_dir, 'emotion_poems.txt')
-
+emotion_poem_corpus = os.path.join(emotion_dir, 'emotion_poems.txt')
+sentiment_dict_path = os.path.join(emotion_dir, 'sentiment_dict.txt')
 
 # TODO: configure dependencies in another file.
 _dependency_dict = {
@@ -34,7 +34,6 @@ _dependency_dict = {
         gen_data_path : [char_dict_path, poems_path, sxhy_path, char2vec_path],
         plan_data_path : [char_dict_path, poems_path, sxhy_path, char2vec_path],
 
-        emotion_poems_path : [poems_path],
         }
 
 def check_uptodate(path):

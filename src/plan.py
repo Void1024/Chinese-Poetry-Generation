@@ -8,6 +8,7 @@ from random import random, shuffle
 from rank_words import RankedWords
 from singleton import Singleton
 from utils import split_sentences, NUM_OF_SENTENCES
+
 import jieba
 import os
 

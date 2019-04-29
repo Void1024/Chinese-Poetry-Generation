@@ -5,14 +5,15 @@ from char_dict import CharDict
 from gensim import models
 from numpy.random import uniform
 from paths import char2vec_path, check_uptodate
-from poems import Poems
+from poems import Poems, _gen_poems
 from singleton import Singleton
 from utils import CHAR_VEC_DIM
-from paths import emotion_dir, emotion_poems_path, check_uptodate
+from paths import emotion_dir, emotion_poem_corpus, sentiment_dict_path, check_uptodate
+from segment import Segmenter
 import numpy as np
 import os
 
-_emotion_word2vec_model_path = os.path.join(emotion_dir, 'emotion_vec_model.bin')
+_corpus_list = ['qts_tab.txt', 'qsc_tab.txt', 'qss_tab.txt', 'qtais_tab.txt']
 
 emotion_list = ['悲', '惧', '乐', '怒', '思', '喜', '忧']
 emotion_dict = {
@@ -25,48 +26,71 @@ emotion_dict = {
     '忧':['忧','恤','痾','虑','艰','遑','厄','迫'],
 }
 
-class PriorEmotion(Singleton):
+def _tf_idf(poems):
+    word_dict = {}
+    total_words = 0
+    total_poem = len(poems)
+    for poem in poems:
+        total_words += len(poem)
+        for word in poem:  
+            if word not in word_dict:
+                word_dict[word] = [0, 0]
+            else:
+                word_dict[word][0] += 1
+        for word in set(poem):
+            word_dict[word][1] += 1
+    for word in word_dict:
+        word_dict[word][0] /= total_words
+        word_dict[word][1] = total_poem / (word_dict[word][1] + 1)
+        word_dict[word] = word_dict[word][0] * word_dict[word][1]
+    return word_dict
+
+def _build_sentiment_dict():
+    _gen_poems(_corpus_list, emotion_poem_corpus)
+    poems = Poems(emotion_poem_corpus)
+    poems = [' '.join(poem) for poem in poems]
+    model = models.Word2Vec(poems)
+    poems = Poems()
+    poems = [list(''.join(poem)) for poem in poems]
+    char2score = _tf_idf(poems)
+    sentiment_dict = {}
+    for char in char2score:
+        if char not in model.wv:
+            continue
+        sentiment_dict[char] = []
+        for emotion in emotion_list:
+            score = 0.0
+            for seed_word in emotion_dict[emotion]:
+                score += char2score[char] * model.wv.similarity(char, seed_word)
+            sentiment_dict[char].append(score)
+    with open(sentiment_dict_path, 'w', encoding = 'utf-8') as fout:
+        fout.write(str(sentiment_dict))
+
+
+
+
+
+class Sentiment():
     def __init__(self):
-        self.char_dict = CharDict()
-        poems = Poems()
-        self.poems = [' '.join(poetry) for poetry in poems]
-        if not os.path.exists(_emotion_word2vec_model_path):
-            if not os.path.exists(emotion_dir):
-                os.mkdir(emotion_dir)
-            self.model = models.Word2Vec(self.poems, size = CHAR_VEC_DIM)
-            self.model.save(_emotion_word2vec_model_path)
-        else:
-            self.model = models.Word2Vec.load(_emotion_word2vec_model_path)
-    def predict(self, poetry):
-        emotions = [0.0 for emotion in emotion_list]
-        sentences = poetry.split()
-
-        for idx in range(len(sentences)):
-            sentence = sentences[idx]
-            for ch in sentence:
-                for i in range(len(emotions)):
-                    if ch in emotion_dict[emotion_list[i]]:
-                        emotions[i] += 1.0
-                    elif ch in self.model.wv:
-                        emotions[i] += self.model.wv.similarity(ch, emotion_list[i])
-
-        max_prob = sorted(range(len(emotions)), key = lambda k : emotions[k])[-1]
-        predict = emotion_list[max_prob]
+        if not os.path.exists(sentiment_dict_path):
+            _build_sentiment_dict()
+        with open(sentiment_dict_path, 'r', encoding = 'utf-8') as fin:
+            self.sentiment_dict = eval(fin.read())
         
-        return predict
-    def gen_train_data(self):
-        if not os.path.exists(emotion_dir):
-            os.mkdir(emotion_dir)
-        with open(emotion_poems_path, 'w', encoding = 'utf-8') as fout:
-            for poetry in self.poems:
-                sentences_len = list(map(lambda p : len(p), poetry.split()))
-                if len(sentences_len) != 8 and len(sentences_len) != 4:
-                    continue
-                if sentences_len[0] < 5:
-                    continue
-                emotion = self.predict(poetry)
-                fout.write(' '.join((emotion, poetry)) + '\n')
-                
+    def predict(self, sentence):
+        emotion_score = [0 for i in range(len(emotion_list))]
+        for char in sentence:
+            if char in self.sentiment_dict:
+                emotion_score = [emotion_score[i] + self.sentiment_dict[char][i] for i in range(len(emotion_list))]
+        max_prob = sorted(range(len(emotion_list)), key = lambda k : emotion_score[k])[-1]
+
+        predict = emotion_list[max_prob] if max(emotion_score) > 0 else '无'
+
+
+        return max_prob, predict,emotion_score
+
+
+
 
 
 

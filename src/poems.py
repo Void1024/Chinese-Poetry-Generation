@@ -11,11 +11,11 @@ import os
 _corpus_list = ['qts_tab.txt']
 
 
-def _gen_poems():
+def _gen_poems(corpus_list = _corpus_list, out = poems_path):
     print("Parsing poems ...")
     char_dict = CharDict()
-    with open(poems_path, 'w') as fout:
-        for corpus in _corpus_list:
+    with open(out, 'w') as fout:
+        for corpus in corpus_list:
             with open(os.path.join(raw_dir, corpus), 'r', encoding='utf-8') as fin:
                 for line in fin.readlines()[1 : ]:
                     sentences = split_sentences(line.strip().split()[-1])
@@ -32,13 +32,13 @@ def _gen_poems():
             print("Finished parsing %s." % corpus)
 
 
-class Poems(Singleton):
+class Poems():
 
-    def __init__(self):
-        if not check_uptodate(poems_path):
+    def __init__(self, src = poems_path):
+        if not check_uptodate(src):
             _gen_poems()
         self.poems = []
-        with open(poems_path, 'r') as fin:
+        with open(src, 'r') as fin:
             for line in fin.readlines():
                 self.poems.append(line.strip().split())
 
