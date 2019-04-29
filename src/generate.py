@@ -26,7 +26,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 class Generator(Singleton):
 
-    def _build_keyword_encoder(self):
+   def _build_keyword_encoder(self):
         """ Encode keyword into a vector."""
         self.keyword = tf.placeholder(
                 shape = [_BATCH_SIZE, None, CHAR_VEC_DIM],
@@ -37,18 +37,20 @@ class Generator(Singleton):
                 dtype = tf.int32,
                 name = "keyword_length")
         bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
-                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 4),
+                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 4),
                 inputs = self.keyword,
                 sequence_length = self.keyword_length,
                 dtype = tf.float32, 
                 time_major = False,
                 scope = "keyword_encoder")
         self.keyword_outputs = tf.concat(bi_outputs, axis = 2)
-
-
+        self.keyword_states = tf.concat(bi_states, axis = 1)
+        self.keyword_outputs = tf.concat((self.keyword_outputs[:, :1], self.keyword_outputs[:, -1:]), axis = 2)
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.keyword_outputs.shape)
+        tf.TensorShape([_BATCH_SIZE, _NUM_UNITS / 2]).\
+                assert_same_rank(self.keyword_states.shape)
         
 
     def _build_context_encoder(self):
@@ -71,7 +73,6 @@ class Generator(Singleton):
                 scope = "context_encoder")
         self.context_outputs = tf.concat(bi_outputs, axis = 2)
         self.context_states = tf.concat(bi_states, axis = 1)
-
         tf.TensorShape([_BATCH_SIZE, None, _NUM_UNITS]).\
                 assert_same_rank(self.context_outputs.shape)
         tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
@@ -80,8 +81,7 @@ class Generator(Singleton):
     def _build_decoder(self):
         """ Decode keyword and context into a sequence of vectors. """
 
-        encoder_outputs = tf.concat((self.keyword_outputs[:, -1:], self.context_outputs), axis = 1)
-
+        encoder_outputs = tf.concat((self.keyword_outputs, self.context_outputs), axis = 1)
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
                 memory = encoder_outputs,
