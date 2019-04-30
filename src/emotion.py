@@ -8,8 +8,9 @@ from paths import char2vec_path, check_uptodate
 from poems import Poems, _gen_poems
 from singleton import Singleton
 from utils import CHAR_VEC_DIM
-from paths import emotion_dir, emotion_poem_corpus, sentiment_dict_path, check_uptodate
+from paths import emotion_dir, emotion_poem_corpus, sentiment_dict_path, sentiment_word_dict_path, check_uptodate
 from segment import Segmenter
+from w2v import get_model
 import numpy as np
 import os
 
@@ -25,6 +26,8 @@ emotion_dict = {
     '喜':['喜','健','倩','贺','好','良','善','幸','赏','朋'],
     '忧':['忧','恤','痾','虑','艰','遑','厄','迫'],
 }
+
+
 
 def _tf_idf(poems):
     word_dict = {}
@@ -49,7 +52,7 @@ def _build_sentiment_dict():
     _gen_poems(_corpus_list, emotion_poem_corpus)
     poems = Poems(emotion_poem_corpus)
     poems = [' '.join(poem) for poem in poems]
-    model = models.Word2Vec(poems)
+    model = models.Word2Vec(poems, size = 200)
     poems = Poems()
     poems = [list(''.join(poem)) for poem in poems]
     char2score = _tf_idf(poems)
@@ -62,10 +65,40 @@ def _build_sentiment_dict():
             score = 0.0
             for seed_word in emotion_dict[emotion]:
                 score += char2score[char] * model.wv.similarity(char, seed_word)
-            sentiment_dict[char].append(score)
+            sentiment_dict[char].append(score / len(emotion_dict[emotion]))
     with open(sentiment_dict_path, 'w', encoding = 'utf-8') as fout:
         fout.write(str(sentiment_dict))
 
+
+def _build_sentiment_word_dict():
+    model = get_model()
+    seed_dict = {}
+    for emotion in emotion_list:
+        seed_dict[emotion] = model.wv.most_similar(positive = [emotion], topn = 20)
+    poems = Poems(emotion_poem_corpus)
+    seg = Segmenter()
+    poems_data = []
+
+    for poem in poems:
+        poem_data = []
+        for sentence in poem:
+            poem_data.extend(seg.segment(sentence))
+        poems_data.append(poem_data)
+    
+    word2score = _tf_idf(poems_data)
+
+    sentiment_dict = {}
+    for word in word2score:
+        if word not in model.wv:
+            continue
+        sentiment_dict[word] = []
+        for emotion in emotion_list:
+            score = 0.0
+            for seed in seed_dict[emotion]:
+                score += model.wv.similarity(seed[0], word) * seed[1] * word2score[word]
+            sentiment_dict[word].append(score)
+    with open(sentiment_word_dict_path, 'w', encoding = 'utf-8') as fout:
+        fout.write(str(sentiment_dict))
 
 
 
@@ -74,20 +107,53 @@ class Sentiment():
     def __init__(self):
         if not os.path.exists(sentiment_dict_path):
             _build_sentiment_dict()
+        if not os.path.exists(sentiment_word_dict_path):
+            _build_sentiment_word_dict()
+            
         with open(sentiment_dict_path, 'r', encoding = 'utf-8') as fin:
             self.sentiment_dict = eval(fin.read())
+        with open(sentiment_word_dict_path, 'r', encoding = 'utf-8') as fin:
+            self.sentiment_word_dict = eval(fin.read())
         
+        self.seg = Segmenter()
+    
+    def predict_by_word(self, sentence):
+        word_list = self.seg.segment(sentence)
+        emotion_score = [0 for i in range(len(emotion_list))]
+        for word in word_list:
+            if word in self.sentiment_word_dict:
+                emotion_score = [emotion_score[i] + self.sentiment_word_dict[word][i] for i in range(len(emotion_list))]
+        max_prob = sorted(range(len(emotion_list)), key = lambda k : emotion_score[k])[-1]
+
+        
+        predict = emotion_list[max_prob] if max(emotion_score) > 0 else '无'
+
+
+        return predict, emotion_score
+
+
+
     def predict(self, sentence):
         emotion_score = [0 for i in range(len(emotion_list))]
         for char in sentence:
             if char in self.sentiment_dict:
-                emotion_score = [emotion_score[i] + self.sentiment_dict[char][i] for i in range(len(emotion_list))]
+                emotion_score = [emotion_score[i] + (self.sentiment_dict[char][i] if self.sentiment_dict[char][i] > 0 else 0)
+                 for i in range(len(emotion_list))]
+
         max_prob = sorted(range(len(emotion_list)), key = lambda k : emotion_score[k])[-1]
 
+        
         predict = emotion_list[max_prob] if max(emotion_score) > 0 else '无'
 
 
-        return max_prob, predict,emotion_score
+        return predict, emotion_score
+
+    def analysis(self, sentence):
+        word_list = self.seg.segment(sentence)
+        word_list = filter(lambda w : len(w) > 1, word_list)
+        word_list = [(word, self.predict(word)[0]) for word in word_list]
+        return word_list
+
 
 
 

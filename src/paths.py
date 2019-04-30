@@ -25,6 +25,8 @@ emotion_dir = os.path.join(root_dir, 'emotion')
 
 emotion_poem_corpus = os.path.join(emotion_dir, 'emotion_poems.txt')
 sentiment_dict_path = os.path.join(emotion_dir, 'sentiment_dict.txt')
+sentiment_word_dict_path = os.path.join(emotion_dir, 'sentiment_word_dict.txt')
+all_poems_w2v_model_path = os.path.join(emotion_dir, 'all_poems_w2v.model')
 
 # TODO: configure dependencies in another file.
 _dependency_dict = {
