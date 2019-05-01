@@ -146,7 +146,7 @@ class Sentiment():
         predict = emotion_list[max_prob] if max(emotion_score) > 0 else '无'
 
 
-        return predict, emotion_score
+        return predict, max_prob, emotion_score
 
     def analysis(self, sentence):
         word_list = self.seg.segment(sentence)

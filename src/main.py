@@ -14,44 +14,14 @@ if __name__ == '__main__':
     generator = Generator()
     while True:
         hints = input("Type in hints >> ")
-        keywords = planner.plan(hints)
+        input_list = hints.split('#')
+
+        keywords = planner.plan(input_list[0])
+        emotion = '悲' if len(input_list) < 2 else input_list[1]
         print("Keywords: " + ' '.join(keywords))
-        poem = generator.generate(keywords)
+        poem = generator.generate(keywords, emotion[0])
         print("Poem generated:")
         for sentence in poem:
             print(sentence)
 
 
-# def clickme():
-#     hints = e1.get()
-#     keywords = planner.plan(hints)
-#     print(keywords)
-#     poem = generator.generate(keywords)
-#     print(poem)
-#     aLabel.configure(text=keywords)
-#     bLabel.configure(text=poem)
-
-# if __name__ == '__main__':
-    
-#     planner = Planner()
-#     generator = Generator()
-    
-#     win=tk.Tk()
-#     win.title('poem')
-#     win.geometry("400x200")
-    
-#     v1 = StringVar()
-#     e1 = Entry(win, textvariable = v1)
-#     e1.pack()
-    
-#     action=ttk.Button(win,text='生成',command=clickme)
-#     action.pack()
-    
-#     #show result
-#     aLabel=ttk.Label(win,text="Waiting for keyword",width=80)
-#     aLabel.pack()
-    
-#     bLabel=ttk.Label(win,text="Waiting for poem", width=80)
-#     bLabel.pack()
-    
-#     win.mainloop()

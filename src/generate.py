@@ -9,6 +9,7 @@ from pron_dict import PronDict
 from random import random
 from singleton import Singleton
 from utils import CHAR_VEC_DIM, NUM_OF_SENTENCES
+from emotion import Sentiment
 import numpy as np
 import os
 import sys
@@ -26,7 +27,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 class Generator(Singleton):
 
-   def _build_keyword_encoder(self):
+    def _build_keyword_encoder(self):
         """ Encode keyword into a vector."""
         self.keyword = tf.placeholder(
                 shape = [_BATCH_SIZE, None, CHAR_VEC_DIM],
@@ -78,14 +79,31 @@ class Generator(Singleton):
         tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
                 assert_same_rank(self.context_states.shape)
 
+    def _build_emotion_encoder(self):
+        self.emotion = tf.placeholder(
+                shape = [_BATCH_SIZE, 1, CHAR_VEC_DIM],
+                dtype = tf.float32,
+                name = "emotion"
+        )
+        bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+                inputs = self.emotion,
+                dtype = tf.float32, 
+                time_major = False,
+                scope = "emotion_encoder"
+        )
+        self.emotion_outputs = tf.concat(bi_outputs, axis = 2)
+
     def _build_decoder(self):
         """ Decode keyword and context into a sequence of vectors. """
 
+        self.keyword_outputs = tf.concat((self.emotion_outputs, self.keyword_outputs), axis = 1)
         encoder_outputs = tf.concat((self.keyword_outputs, self.context_outputs), axis = 1)
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
                 memory = encoder_outputs,
-                memory_sequence_length = (self.context_length + 1))
+                memory_sequence_length = (self.context_length + 2))
         decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 cell = tf.contrib.rnn.GRUCell(_NUM_UNITS),
                 attention_mechanism = attention)
@@ -163,8 +181,8 @@ class Generator(Singleton):
 
         self.learning_rate = tf.clip_by_value(
                 tf.multiply(1.6e-5, tf.pow(2.1, self.loss)),
-                clip_value_min = 0.0002,
-                clip_value_max = 0.02)
+                clip_value_min = 0.00001,
+                clip_value_max = 0.04)
         self.opt_step = tf.train.AdamOptimizer(
                 learning_rate = self.learning_rate).\
                         minimize(loss = self.loss)
@@ -172,6 +190,7 @@ class Generator(Singleton):
     def _build_graph(self):
         self._build_keyword_encoder()
         self._build_context_encoder()
+        self._build_emotion_encoder()
         self._build_decoder()
         self._build_projector()
         self._build_optimizer()
@@ -179,6 +198,7 @@ class Generator(Singleton):
     def __init__(self):
         self.char_dict = CharDict()
         self.char2vec = Char2Vec()
+        self.sentiment = Sentiment()
         self._build_graph()
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
@@ -196,7 +216,7 @@ class Generator(Singleton):
             self.trained = True
         pass
 
-    def generate(self, keywords):
+    def generate(self, keywords, emotion = '悲'):
         assert NUM_OF_SENTENCES == len(keywords)
         pron_dict = PronDict()
         context = start_of_sentence()
@@ -210,6 +230,9 @@ class Generator(Singleton):
                         [keyword] * _BATCH_SIZE)
                 context_data, context_length = self._fill_np_matrix(
                         [context] * _BATCH_SIZE)
+                emotion_data = np.zeros(shape = [_BATCH_SIZE, 1, CHAR_VEC_DIM], dtype = np.float32)
+                for i in range(len(emotion_data)):
+                        emotion_data[i, 0] = self.char2vec.get_vect(emotion)
                 char = start_of_sentence()
                 for _ in range(7):
                     decoder_input, decoder_input_length = \
@@ -219,6 +242,7 @@ class Generator(Singleton):
                             self.keyword_length : keyword_length,
                             self.context : context_data,
                             self.context_length : context_length,
+                            self.emotion : emotion_data,
                             self.decoder_inputs : decoder_input,
                             self.decoder_input_length : decoder_input_length
                             }
@@ -298,14 +322,14 @@ class Generator(Singleton):
             # Penalize rhyming violations.
             if (idx == 15 or idx == 31) and \
                     not pron_dict.co_rhyme(ch, context[7]):
-                prob_list[i] *= 0.2
+                prob_list[i] *= 0.1
             # Penalize tonal violations.
             if idx > 2 and 2 == idx % 8 and \
                     not pron_dict.counter_tone(context[2], ch):
-                prob_list[i] *= 0.2
+                prob_list[i] *= 0.1
             if (4 == idx % 8 or 6 == idx % 8) and \
                     not pron_dict.counter_tone(context[idx - 2], ch):
-                prob_list[i] *= 0.2
+                prob_list[i] *= 0.1
         return prob_list
 
     def train(self, n_epochs = 6):
@@ -347,11 +371,19 @@ class Generator(Singleton):
                 [start_of_sentence() + sentence[:-1] \
                         for sentence in sentences])
         targets = self._fill_targets(sentences)
+
+        emotions = [self.sentiment.predict(sentence)[0] for sentence in sentences]
+        matrix = np.zeros([_BATCH_SIZE, 1, CHAR_VEC_DIM], dtype = np.float32)
+        for i in range(len(emotions)):
+                matrix[i, 0] = self.char2vec.get_vect(emotions[i])
         feed_dict = {
                 self.keyword : keyword_data,
                 self.keyword_length : keyword_length,
                 self.context : context_data,
                 self.context_length : context_length,
+
+                self.emotion : matrix,
+
                 self.decoder_inputs : decoder_inputs,
                 self.decoder_input_length : decoder_input_length,
                 self.targets : targets
