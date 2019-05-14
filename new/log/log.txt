@@ -24,3 +24,4 @@
 [Tue May 14 08:20:10 2019] [Generator] epoch = 8, loss = 4.380136, learning_rate = 0.000414, time used 1853.395840(s)
 [Tue May 14 08:52:03 2019] [Generator] epoch = 9, loss = 4.374340, learning_rate = 0.000412, time used 1849.500533(s)
 [Tue May 14 09:24:01 2019] [Generator] epoch = 10, loss = 4.368234, learning_rate = 0.000410, time used 1852.329716(s)
+[Tue May 14 16:15:19 2019]Generator Training begin !
