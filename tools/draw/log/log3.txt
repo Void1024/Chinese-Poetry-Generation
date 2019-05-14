@@ -1,0 +1,62 @@
+Tue May 14 22:16:54 2019
+train loss 5.816848 lr 0.001389
+validate loss 5.401970
+train loss 5.080804 lr 0.000697
+validate loss 5.230619
+train loss 4.805451 lr 0.000568
+validate loss 5.167909
+train loss 4.609067 lr 0.000491
+validate loss 5.148715
+train loss 4.450294 lr 0.000436
+validate loss 5.139930
+train loss 4.314981 lr 0.000394
+validate loss 5.142951
+train loss 4.197307 lr 0.000361
+validate loss 5.144766
+train loss 4.089742 lr 0.000334
+validate loss 5.154650
+train loss 3.988524 lr 0.000309
+validate loss 5.162047
+train loss 3.898028 lr 0.000289
+validate loss 5.187699
+train loss 3.813792 lr 0.000272
+validate loss 5.213650
+train loss 3.733476 lr 0.000256
+validate loss 5.233064
+train loss 3.661860 lr 0.000243
+validate loss 5.261193
+train loss 3.592441 lr 0.000231
+validate loss 5.290507
+train loss 3.523708 lr 0.000219
+validate loss 5.311717
+train loss 3.456010 lr 0.000208
+validate loss 5.334570
+train loss 3.392694 lr 0.000199
+validate loss 5.368316
+train loss 3.336400 lr 0.000191
+validate loss 5.405097
+train loss 3.286624 lr 0.000184
+validate loss 5.430046
+train loss 3.239930 lr 0.000178
+validate loss 5.454263
+train loss 3.196273 lr 0.000172
+validate loss 5.465262
+train loss 3.153222 lr 0.000167
+validate loss 5.468916
+train loss 3.107982 lr 0.000161
+validate loss 5.490012
+train loss 3.067000 lr 0.000156
+validate loss 5.512297
+train loss 3.024938 lr 0.000151
+validate loss 5.533311
+train loss 2.982648 lr 0.000147
+validate loss 5.553491
+train loss 2.941976 lr 0.000142
+validate loss 5.591779
+train loss 2.904987 lr 0.000139
+validate loss 5.607084
+train loss 2.868563 lr 0.000135
+validate loss 5.615824
+train loss 2.833055 lr 0.000131
+validate loss 5.634611
+test loss 5.624256

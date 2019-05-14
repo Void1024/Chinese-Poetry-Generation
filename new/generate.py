@@ -383,11 +383,9 @@ class Generator(Singleton):
                                 '[Model Training] total %d, process is %d%%, time used %d(s)' % (total, batch_no *  _BATCH_SIZE / total * 100, now_time - beg_time), end = '\r'
                         )
                     log_string = '[%s] [Generator] epoch = %d, loss = %f, learning_rate = %f, time used %f(s)' % (time.ctime(), epoch + 1, loss / batch_no, learning_rate / batch_no, now_time - beg_time)
+                    self.saver.save(session, _model_path)
                     print(log_string)
                     write_log(log_string)
-                    
-
-                    self.saver.save(session, _model_path)
                     time.sleep(60)
                     
                 print("Training is done.")
