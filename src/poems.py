@@ -8,7 +8,7 @@ from singleton import Singleton
 from utils import split_sentences
 import os
 
-_corpus_list = ['qts_tab.txt']
+_corpus_list = ['qts_tab.txt', 'ming.all', 'qss_tab.txt', 'qtais_tab.txt', 'qing.all']
 
 
 def _gen_poems(corpus_list = _corpus_list, out = poems_path):

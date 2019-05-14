@@ -19,14 +19,14 @@ def gen_train_data():
     plan_data = []
     gen_data = []
     for poem in poems:
-        if len(poem) != 4:
+        if len(poem) != 4 and len(poem) != 8:
             continue # Only consider quatrains.
         valid = True
         context = start_of_sentence()
         gen_lines = []
         keywords = []
         for sentence in poem:
-            if len(sentence) != 5 and len(sentence) != 7:
+            if len(sentence) != 7:
                 valid = False
                 break
             words = list(filter(lambda seg: seg in ranked_words, 
@@ -62,14 +62,17 @@ def batch_train_data(batch_size):
     keywords = []
     contexts = []
     sentences = []
+    total = 0
     with open(gen_data_path, 'r') as fin:
-        for line in fin.readlines():
+        lines = fin.readlines()
+        total = len(lines)
+        for line in lines:
             toks = line.strip().split('\t')
             sentences.append(toks[0])
             keywords.append(toks[1])
             contexts.append(toks[2])
             if len(keywords) == batch_size:
-                yield keywords, contexts, sentences
+                yield keywords, contexts, sentences, total
                 keywords.clear()
                 contexts.clear()
                 sentences.clear()

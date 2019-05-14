@@ -48,7 +48,7 @@ class Planner(Singleton):
                 # Sort similar words in decreasing similarity with randomness.
                 similars = sorted(similars, key = lambda x: x[1])
                 for similar in similars:
-                    keywords.add(similar[0])
+                    keywords.append(similar[0])
                     if len(keywords) == NUM_OF_SENTENCES:
                         break
             prob_sum = sum(1. / (i + 1) \
@@ -62,19 +62,21 @@ class Planner(Singleton):
                 word = self.ranked_words[word_idx]
                 s += 1.0 / (word_idx + 1)
                 if word not in keywords and rand_val < s:
-                    keywords.add(word)
+                    keywords.append(word)
                 word_idx += 1
         results = list(keywords)
-        shuffle(results)
+        # shuffle(results)
+        # print(results)
         return results
 
     def _extract(self, text):
         def extract_from_sentence(sentence):
             return filter(lambda w : w in self.ranked_words,
                 jieba.lcut(sentence))
-        keywords = set()
+        keywords = []
         for sentence in split_sentences(text):
-            keywords.update(extract_from_sentence(sentence))
+            keywords.extend(extract_from_sentence(sentence))
+        # print(keywords)
         return keywords
 
 

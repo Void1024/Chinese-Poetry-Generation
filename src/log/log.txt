@@ -1,0 +1,26 @@
+[Tue May 14 00:24:50 2019]Generator Training begin !
+[Tue May 14 00:47:20 2019] [Generator] epoch = 1, loss = 4.531282, learning_rate = 0.000463, time used 1349.893213(s)
+[Tue May 14 00:48:02 2019]Generator Training begin !
+[Tue May 14 00:49:23 2019]Generator Training begin !
+[Tue May 14 00:55:22 2019]Generator Training begin !
+[Tue May 14 00:57:20 2019]Generator Training begin !
+[Tue May 14 01:00:21 2019]Generator Training begin !
+[Tue May 14 01:02:12 2019]Generator Training begin !
+[Tue May 14 01:03:39 2019]Generator Training begin !
+[Tue May 14 01:31:00 2019] [Generator] epoch = 1, loss = 4.531736, learning_rate = 0.000463, time used 1641.206512(s)
+[Tue May 14 01:59:04 2019] [Generator] epoch = 2, loss = 4.512515, learning_rate = 0.000457, time used 1620.530471(s)
+[Tue May 14 02:27:01 2019] [Generator] epoch = 3, loss = 4.495585, learning_rate = 0.000451, time used 1614.096441(s)
+[Tue May 14 02:54:56 2019] [Generator] epoch = 4, loss = 4.480001, learning_rate = 0.000446, time used 1611.592429(s)
+[Tue May 14 03:22:52 2019] [Generator] epoch = 5, loss = 4.466300, learning_rate = 0.000441, time used 1612.702166(s)
+[Tue May 14 03:50:46 2019] [Generator] epoch = 6, loss = 4.452896, learning_rate = 0.000437, time used 1611.669935(s)
+[Tue May 14 04:05:46 2019]Generator Training begin !
+[Tue May 14 04:36:40 2019] [Generator] epoch = 1, loss = 4.441016, learning_rate = 0.000433, time used 1854.816314(s)
+[Tue May 14 05:08:36 2019] [Generator] epoch = 2, loss = 4.429944, learning_rate = 0.000430, time used 1852.192245(s)
+[Tue May 14 05:40:31 2019] [Generator] epoch = 3, loss = 4.420374, learning_rate = 0.000427, time used 1851.068086(s)
+[Tue May 14 06:12:27 2019] [Generator] epoch = 4, loss = 4.411395, learning_rate = 0.000424, time used 1850.804759(s)
+[Tue May 14 06:44:20 2019] [Generator] epoch = 5, loss = 4.402864, learning_rate = 0.000421, time used 1849.929104(s)
+[Tue May 14 07:16:18 2019] [Generator] epoch = 6, loss = 4.395065, learning_rate = 0.000419, time used 1852.187057(s)
+[Tue May 14 07:48:11 2019] [Generator] epoch = 7, loss = 4.386374, learning_rate = 0.000416, time used 1850.138731(s)
+[Tue May 14 08:20:10 2019] [Generator] epoch = 8, loss = 4.380136, learning_rate = 0.000414, time used 1853.395840(s)
+[Tue May 14 08:52:03 2019] [Generator] epoch = 9, loss = 4.374340, learning_rate = 0.000412, time used 1849.500533(s)
+[Tue May 14 09:24:01 2019] [Generator] epoch = 10, loss = 4.368234, learning_rate = 0.000410, time used 1852.329716(s)

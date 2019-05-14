@@ -4,16 +4,17 @@
 from char2vec import Char2Vec
 from char_dict import CharDict, end_of_sentence, start_of_sentence
 from data_utils import batch_train_data
-from paths import save_dir
+from paths import save_dir, write_log
 from pron_dict import PronDict
 from random import random
 from singleton import Singleton
 from utils import CHAR_VEC_DIM, NUM_OF_SENTENCES
-from emotion import Sentiment
+from emotion import Sentiment, emotion_list
 import numpy as np
 import os
 import sys
 import tensorflow as tf
+import time
 
 
 _BATCH_SIZE = 64
@@ -79,26 +80,30 @@ class Generator(Singleton):
         tf.TensorShape([_BATCH_SIZE, _NUM_UNITS]).\
                 assert_same_rank(self.context_states.shape)
 
-    def _build_emotion_encoder(self):
-        self.emotion = tf.placeholder(
-                shape = [_BATCH_SIZE, 1, CHAR_VEC_DIM],
-                dtype = tf.float32,
-                name = "emotion"
-        )
-        bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
-                cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
-                inputs = self.emotion,
-                dtype = tf.float32, 
-                time_major = False,
-                scope = "emotion_encoder"
-        )
-        self.emotion_outputs = tf.concat(bi_outputs, axis = 2)
+#     def _build_emotion_encoder(self):
+#         self.emotion = tf.placeholder(
+#                 shape = [_BATCH_SIZE, 1, CHAR_VEC_DIM],
+#                 dtype = tf.float32,
+#                 name = "emotion"
+#         )
+#         bi_outputs, bi_states = tf.nn.bidirectional_dynamic_rnn(
+#                 cell_fw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+#                 cell_bw = tf.contrib.rnn.GRUCell(_NUM_UNITS / 2),
+#                 inputs = self.emotion,
+#                 dtype = tf.float32, 
+#                 time_major = False,
+#                 scope = "emotion_encoder"
+#         )
+#         self.emotion_outputs = tf.concat(bi_outputs, axis = 2)
 
     def _build_decoder(self):
         """ Decode keyword and context into a sequence of vectors. """
-
-        self.keyword_outputs = tf.concat((self.emotion_outputs, self.keyword_outputs), axis = 1)
+        self.emotion = tf.placeholder(
+                shape = [_BATCH_SIZE, 1, _NUM_UNITS],
+                dtype = tf.float32,
+                name = "emotion"
+        )
+        self.keyword_outputs = tf.concat((self.emotion, self.keyword_outputs), axis = 1)
         encoder_outputs = tf.concat((self.keyword_outputs, self.context_outputs), axis = 1)
         attention = tf.contrib.seq2seq.BahdanauAttention(
                 num_units = _NUM_UNITS, 
@@ -181,8 +186,9 @@ class Generator(Singleton):
 
         self.learning_rate = tf.clip_by_value(
                 tf.multiply(1.6e-5, tf.pow(2.1, self.loss)),
-                clip_value_min = 0.00001,
-                clip_value_max = 0.04)
+                clip_value_min = 0.0002,
+                clip_value_max = 0.02)
+        # self.learning_rate = tf.constant(0.0002)
         self.opt_step = tf.train.AdamOptimizer(
                 learning_rate = self.learning_rate).\
                         minimize(loss = self.loss)
@@ -190,12 +196,14 @@ class Generator(Singleton):
     def _build_graph(self):
         self._build_keyword_encoder()
         self._build_context_encoder()
-        self._build_emotion_encoder()
+        # self._build_emotion_encoder()
         self._build_decoder()
         self._build_projector()
         self._build_optimizer()
 
     def __init__(self):
+        self.tf_config = tf.ConfigProto()
+        # self.tf_config.gpu_options.per_process_gpu_memory_fraction = 0.8
         self.char_dict = CharDict()
         self.char2vec = Char2Vec()
         self.sentiment = Sentiment()
@@ -206,6 +214,7 @@ class Generator(Singleton):
         self.trained = False
         
     def _initialize_session(self, session):
+        
         checkpoint = tf.train.get_checkpoint_state(save_dir)
         if not checkpoint or not checkpoint.model_checkpoint_path:
             init_op = tf.group(tf.global_variables_initializer(),
@@ -220,7 +229,7 @@ class Generator(Singleton):
         assert NUM_OF_SENTENCES == len(keywords)
         pron_dict = PronDict()
         context = start_of_sentence()
-        with tf.Session() as session:
+        with tf.Session(config = self.tf_config) as session:
             self._initialize_session(session)
             if not self.trained:
                 print("Please train the model first! (./train.py -g)")
@@ -230,9 +239,12 @@ class Generator(Singleton):
                         [keyword] * _BATCH_SIZE)
                 context_data, context_length = self._fill_np_matrix(
                         [context] * _BATCH_SIZE)
-                emotion_data = np.zeros(shape = [_BATCH_SIZE, 1, CHAR_VEC_DIM], dtype = np.float32)
+                emotion_data = np.zeros(shape = [_BATCH_SIZE, 1, _NUM_UNITS], dtype = np.float32)
                 for i in range(len(emotion_data)):
-                        emotion_data[i, 0] = self.char2vec.get_vect(emotion)
+                        if emotion not in emotion_list:
+                                continue
+                        j = emotion_list.index(emotion)
+                        emotion_data[i, 0, j] = 1
                 char = start_of_sentence()
                 for _ in range(7):
                     decoder_input, decoder_input_length = \
@@ -313,52 +325,70 @@ class Generator(Singleton):
         prob_list[0] = 0
         prob_list[-1] = 0
         idx = len(context)
+        error_words = ['一','不','何','无','上','未','处','己','中','已','多']
         used_chars = set(ch for ch in context)
         for i in range(1, len(prob_list) - 1):
             ch = self.char_dict.int2char(i)
             # Penalize used characters.
             if ch in used_chars:
-                prob_list[i] *= 0
+                prob_list[i] *= 0.0
             # Penalize rhyming violations.
             if (idx == 15 or idx == 31) and \
                     not pron_dict.co_rhyme(ch, context[7]):
-                prob_list[i] *= 0.1
+                prob_list[i] *= 0.0
             # Penalize tonal violations.
             if idx > 2 and 2 == idx % 8 and \
                     not pron_dict.counter_tone(context[2], ch):
-                prob_list[i] *= 0.1
+                prob_list[i] *= 0.0
             if (4 == idx % 8 or 6 == idx % 8) and \
                     not pron_dict.counter_tone(context[idx - 2], ch):
-                prob_list[i] *= 0.1
+                prob_list[i] *= 0.0
+            if (ch in error_words) and idx < 8:
+                prob_list[i] *= 0.0
         return prob_list
 
     def train(self, n_epochs = 6):
-        print("Training RNN-based generator ...")
-        with tf.Session() as session:
+        
+        with tf.Session(config = self.tf_config) as session:
             self._initialize_session(session)
             try:
+                print("Training RNN-based generator ...")
+                write_log("[%s]Generator Training begin !" % time.ctime())
                 for epoch in range(n_epochs):
                     batch_no = 0
-                    for keywords, contexts, sentences \
+                    loss = 0.0
+                    learning_rate = 0.0
+                    beg_time = time.time()
+                    now_time = time.time()
+                    for keywords, contexts, sentences, total \
                             in batch_train_data(_BATCH_SIZE):
                         
-                        sys.stdout.write("[Seq2Seq Training] epoch = %d, " \
-                                "line %d to %d ..." % 
-                                (epoch, batch_no * _BATCH_SIZE,
-                                (batch_no + 1) * _BATCH_SIZE))
+                        # sys.stdout.write("[Seq2Seq Training] epoch = %d, " \
+                        #         "line %d to %d ..." % 
+                        #         (epoch, batch_no * _BATCH_SIZE,
+                        #         (batch_no + 1) * _BATCH_SIZE))
                         
-                        sys.stdout.flush()
+                        # sys.stdout.flush()
                        
-                        self._train_a_batch(session, epoch,
+                        tem_loss,tem_lr = self._train_a_batch(session, epoch,
                                 keywords, contexts, sentences)
-                        
+                        loss += tem_loss
+                        learning_rate += tem_lr
                         batch_no += 1
-                        # if 0 == batch_no % 32:
-                        
-                        #     self.saver.save(session, _model_path)
-                        
-                        
+                        now_time = time.time()
+                        # if 0 == batch_no % 2:
+                        #         time.sleep(0.1)
+                        time.sleep(0.05)
+                        print(
+                                '[Model Training] total %d, process is %d%%, time used %d(s)' % (total, batch_no *  _BATCH_SIZE / total * 100, now_time - beg_time), end = '\r'
+                        )
+                    log_string = '[%s] [Generator] epoch = %d, loss = %f, learning_rate = %f, time used %f(s)' % (time.ctime(), epoch + 1, loss / batch_no, learning_rate / batch_no, now_time - beg_time)
+                    print(log_string)
+                    write_log(log_string)
+                    
+
                     self.saver.save(session, _model_path)
+                    time.sleep(60)
                     
                 print("Training is done.")
             except KeyboardInterrupt:
@@ -375,7 +405,10 @@ class Generator(Singleton):
         emotions = [self.sentiment.predict(sentence)[0] for sentence in sentences]
         matrix = np.zeros([_BATCH_SIZE, 1, CHAR_VEC_DIM], dtype = np.float32)
         for i in range(len(emotions)):
-                matrix[i, 0] = self.char2vec.get_vect(emotions[i])
+                if emotions[i] not in emotion_list:
+                        continue
+                j = emotion_list.index(emotions[i])
+                matrix[i, 0, j] = 1
         feed_dict = {
                 self.keyword : keyword_data,
                 self.keyword_length : keyword_length,
@@ -393,7 +426,8 @@ class Generator(Singleton):
                 [self.loss, self.learning_rate, self.opt_step],
                 feed_dict = feed_dict)
         
-        print(" loss =  %f, learning_rate = %f" % (loss, learning_rate))
+        # print(" loss =  %f, learning_rate = %f" % (loss, learning_rate))
+        return loss, learning_rate
 
     def _fill_np_matrix(self, texts):
         max_time = max(map(len, texts))

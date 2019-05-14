@@ -1,9 +1,8 @@
 *.pyc
+__pycache__/
 show.py
 data/
 save*/
 emotion/
 .backup/
-log.txt
 tem/
-ltp/

@@ -4,10 +4,7 @@
 from generate import Generator
 from plan import Planner
 
-import tkinter as tk
-from tkinter import ttk
-from tkinter import Entry
-from tkinter import StringVar
+
 
 if __name__ == '__main__':
     planner = Planner()
