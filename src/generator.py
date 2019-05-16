@@ -328,7 +328,8 @@ class Generator(Singleton):
         prob_list[0] = 0
         prob_list[-1] = 0
         idx = len(context)
-        error_words = ['一','不','何','无','上','未','处','己','中','已','多']
+        # error_words = ['一','不','何','无','上','未','处','己','中','已','多','开','人','生','树']
+        error_words = ['一','不','何','无','上','未','处','己','中','已']
         used_chars = set(ch for ch in context)
         for i in range(1, len(prob_list) - 1):
             ch = self.char_dict.int2char(i)
