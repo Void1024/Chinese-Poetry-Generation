@@ -105,6 +105,8 @@ def _build_sentiment_word_dict():
 
 class Sentiment():
     def __init__(self):
+        if not os.path.exists(emotion_dir):
+            os.mkdir(emotion_dir)
         if not os.path.exists(sentiment_dict_path):
             _build_sentiment_dict()
         if not os.path.exists(sentiment_word_dict_path):

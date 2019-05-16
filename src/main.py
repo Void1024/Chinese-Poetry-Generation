@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from generate import Generator
+from generator import Generator
 from plan import Planner
 
 

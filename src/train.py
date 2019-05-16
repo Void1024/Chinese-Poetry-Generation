@@ -1,10 +1,11 @@
 #! /usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-from generate import Generator
+from generator import Generator
 from gensim import models
 from plan import train_planner
 from paths import save_dir
+from emotion import Sentiment
 import argparse
 import os
 import sys
@@ -20,19 +21,20 @@ if __name__ == '__main__':
             action = 'store_true', help = 'train both models')
     parser.add_argument('--clean', dest = 'clean', default = False,
             action = 'store_true', help = 'delete all models')
+    parser.add_argument('-e', dest = 'emotion', default = False,
+            action = 'store_true', help = 'train emotion model')
     args = parser.parse_args()
     if args.clean:
         for f in os.listdir(save_dir):
             os.remove(os.path.join(save_dir, f))
     else:
         if args.all or args.planner:
-            print("[Log] train planner")
             train_planner()
+        if args.emotion:
+            s = Sentiment()
         if args.all or args.generator:
-            print("[Log] build generator")
             generator = Generator()
-            print("[Log] train generator")
-            generator.train(n_epochs = 10)
+            generator.train(n_epochs = 20)
 
             print("All training is done!")
 
